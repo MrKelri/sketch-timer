@@ -1,0 +1,955 @@
+```html
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎨</text></svg>">
+    <title>Sketch Timer — быстрые наброски</title>
+    <style>
+        :root {
+            --btn-transparency: 0.5;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Roboto', system-ui, -apple-system, sans-serif;
+            background: #0a0c12;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        .screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            transition: opacity 0.2s;
+            overflow-y: auto;
+        }
+
+        .screen.hidden {
+            display: none;
+        }
+
+        .menu-screen {
+            background: linear-gradient(135deg, #1a1e2c 0%, #0f1219 100%);
+            padding: 2rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .menu-card {
+            max-width: 1000px;
+            width: 100%;
+            background: rgba(20, 24, 36, 0.85);
+            backdrop-filter: blur(12px);
+            border-radius: 2rem;
+            padding: 2rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        h1,
+        h2,
+        h3 {
+            color: #eef4ff;
+            margin-bottom: 1rem;
+        }
+
+        .folder-area {
+            background: #0b0e16;
+            border-radius: 1.5rem;
+            padding: 1rem;
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .folder-path {
+            flex: 1;
+            font-family: monospace;
+            color: #8aaee0;
+            background: #1a1f2c;
+            padding: 0.6rem 1rem;
+            border-radius: 2rem;
+            font-size: 0.85rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        button {
+            background: #2c3e66;
+            border: none;
+            color: white;
+            font-weight: 600;
+            padding: 0.6rem 1.2rem;
+            border-radius: 2rem;
+            cursor: pointer;
+            transition: 0.1s;
+            font-size: 0.9rem;
+        }
+
+        button:active {
+            transform: scale(0.97);
+        }
+
+        button.primary {
+            background: #3b6ea0;
+        }
+
+        button.danger {
+            background: #8b3c4a;
+        }
+
+        button.warning {
+            background: #b9792a;
+        }
+
+        button.success {
+            background: #2a7a4b;
+        }
+
+        .preset-list {
+            margin: 1.5rem 0;
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+            max-height: 350px;
+            overflow-y: auto;
+        }
+
+        .preset-item {
+            background: #0f1320;
+            border-radius: 1rem;
+            padding: 0.8rem 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            cursor: pointer;
+            border: 1px solid transparent;
+        }
+
+        .preset-item.selected {
+            border-color: #5f9eff;
+            background: #1a2340;
+        }
+
+        .preset-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.2rem;
+        }
+
+        .preset-name {
+            font-weight: bold;
+            color: #c9e2ff;
+        }
+
+        .preset-desc {
+            font-size: 0.75rem;
+            color: #9aa9c1;
+        }
+
+        .preset-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .preset-actions button {
+            padding: 0.3rem 0.8rem;
+            font-size: 0.75rem;
+        }
+
+        .new-preset-form {
+            background: #0b0e16;
+            border-radius: 1.5rem;
+            padding: 1.2rem;
+            margin-top: 1rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            color: #b9ceff;
+            margin-bottom: 0.4rem;
+            font-weight: 500;
+        }
+
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .time-shortcut {
+            background: #1e2a3a;
+            padding: 0.3rem 0.8rem;
+            font-size: 0.8rem;
+        }
+
+        input,
+        select {
+            background: #1e2438;
+            border: 1px solid #2f3a5a;
+            padding: 0.4rem 0.8rem;
+            border-radius: 1rem;
+            color: white;
+            width: 100%;
+        }
+
+        .small-note {
+            font-size: 0.7rem;
+            color: #8aa0c0;
+            margin-top: 0.2rem;
+        }
+
+        .flex-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .app-screen {
+            background: black;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .image-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: black;
+        }
+
+        #mainImage {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            width: auto;
+            height: 100vh;
+        }
+
+        .controls-overlay {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            background: linear-gradient(267.68deg, rgba(30, 30, 30, 0.5) 0%, rgba(143, 143, 143, 0.4) 95%, rgba(255, 255, 255, 0) 100%);
+            filter: drop-shadow(0px 4px 4px rgba(0, 0, 0, 0.25));
+            border-radius: 0px 24px 0px 0px;
+            padding: 12px 20px;
+            display: flex;
+            gap: 20px;
+            align-items: baseline;
+
+            font-family: monospace;
+            font-size: 1.8rem;
+            font-weight: bold;
+            z-index: 20;
+        }
+
+        .controls-overlay button {
+            background: transparent;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: rgba(255, 255, 255, var(--btn-transparency));
+            padding: 0;
+            width: auto;
+            transition: 0.05s linear;
+        }
+
+
+
+        .timer-display {
+            font-family: monospace;
+            font-size: 1.8rem;
+            letter-spacing: 2px;
+            padding: 0 8px;
+            border-radius: 16px;
+            color: rgba(255, 255, 255, var(--btn-transparency));
+        }
+
+        .counter-badge {
+            font-family: monospace;
+            font-size: 1.2rem;
+            padding: 4px 10px;
+            border-radius: 40px;
+            color: rgba(255, 255, 255, var(--btn-transparency));
+        }
+
+        .close-btn {
+            position: fixed;
+            top: 20px;
+            right: 24px;
+            background: linear-gradient(267.68deg, rgba(30, 30, 30, 0.5) 0%, rgba(143, 143, 143, 0.4) 95%, rgba(255, 255, 255, 0) 100%);
+            border-radius: 40px;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            color: rgba(255, 255, 255, 0.3);
+            z-index: 20;
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(6px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        .modal-card {
+            background: #1e2438;
+            border-radius: 2rem;
+            padding: 2rem;
+            text-align: center;
+            max-width: 400px;
+            color: white;
+        }
+
+        .modal-card button {
+            margin: 0.5rem;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="menuScreen" class="screen menu-screen">
+        <div class="menu-card">
+            <h1>🎨 Sketch Timer</h1>
+            <div class="folder-area">
+                <button id="selectFolderBtn">📂 Выбрать папку</button>
+                <div id="folderPathDisplay" class="folder-path">Папка не выбрана</div>
+            </div>
+
+            <div id="presetsSection">
+                <h2>Пресеты</h2>
+                <div id="presetList" class="preset-list"></div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <button id="createPresetBtn" class="primary">+ Новый пресет</button>
+                    <div>
+                        <button id="exportPresetsBtn" class="success">💾 Сохранить пресеты</button>
+                        <button id="importPresetsBtn" class="primary">📂 Загрузить пресеты</button>
+                    </div>
+                </div>
+                <div style="margin-top: 20px;"><button id="startTrainingBtn" class="primary" style="width:100%;">🚀
+                        Начать тренировку</button></div>
+            </div>
+
+            <div id="newPresetForm" class="new-preset-form hidden">
+                <h3>Создать / редактировать пресет</h3>
+                <div class="form-group">
+                    <label>Название</label>
+                    <input type="text" id="presetName" placeholder="Мой пресет">
+                </div>
+                <div class="form-group">
+                    <label>Количество картинок</label>
+                    <input type="number" id="presetCount" value="12" min="1">
+                </div>
+                <div class="form-group">
+                    <label>Порядок</label>
+                    <select id="presetOrder">
+                        <option value="random">Случайный</option>
+                        <option value="sequential">По порядку (со смещением)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Время рисования</label>
+                    <div class="button-group" id="drawShortcuts">
+                        <button type="button" data-sec="30" class="time-shortcut">00:30</button>
+                        <button type="button" data-sec="120" class="time-shortcut">02:00</button>
+                        <button type="button" data-sec="300" class="time-shortcut">05:00</button>
+                        <button type="button" data-sec="600" class="time-shortcut">10:00</button>
+                        <button type="button" data-sec="1200" class="time-shortcut">20:00</button>
+                        <button type="button" data-sec="custom" class="time-shortcut">✏️ Своё</button>
+                    </div>
+                    <input type="number" id="presetDrawSec" placeholder="секунды" value="120" step="1">
+                </div>
+                <div class="form-group">
+                    <label>Время наблюдения</label>
+                    <div class="button-group" id="observeShortcuts">
+                        <button type="button" data-sec="0" class="time-shortcut">00:00</button>
+                        <button type="button" data-sec="10" class="time-shortcut">00:10</button>
+                        <button type="button" data-sec="30" class="time-shortcut">00:30</button>
+                        <button type="button" data-sec="60" class="time-shortcut">01:00</button>
+                        <button type="button" data-sec="custom" class="time-shortcut">✏️ Своё</button>
+                    </div>
+                    <input type="number" id="presetObserveSec" placeholder="секунды" value="0" step="1">
+                </div>
+                <div class="flex-buttons">
+                    <button id="savePresetBtn" class="success">💾 Сохранить</button>
+                    <button id="cancelPresetBtn">Отмена</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="appScreen" class="screen app-screen hidden">
+        <div class="image-container">
+            <img id="mainImage" alt="current sketch reference">
+        </div>
+        <div class="controls-overlay">
+            <button id="prevBtn">⏮</button>
+            <button id="playPauseBtn">⏸</button>
+            <button id="nextBtn">⏭</button>
+            <span id="timerText" class="timer-display">00:00</span>
+            <span id="counterIndicator" class="counter-badge">0/0</span>
+        </div>
+        <div id="closeAppBtn" class="close-btn">✕</div>
+    </div>
+
+    <script>
+        let currentFolderFiles = [];
+        let folderPathName = "";
+        let presets = [];
+        let selectedPresetId = null;
+
+        let sessionImages = [];
+        let sessionIndex = 0;
+        let totalShownCount = 0;
+        let unlimitedMode = false;
+        let totalTrainingSeconds = 0;
+
+        let timerInterval = null;
+        let currentPhase = "observe";
+        let timeLeft = 0;
+        let isRunning = false;
+        let currentDrawTotalSec = 0;
+        let currentObserveTotalSec = 0;
+        let drawingElapsedOnThisImage = 0;
+        let observeCompleted = false;
+
+        let sequentialOffset = 0;
+
+        const menuScreen = document.getElementById('menuScreen');
+        const appScreen = document.getElementById('appScreen');
+        const folderPathSpan = document.getElementById('folderPathDisplay');
+        const presetListDiv = document.getElementById('presetList');
+        const selectFolderBtn = document.getElementById('selectFolderBtn');
+        const createPresetBtn = document.getElementById('createPresetBtn');
+        const newPresetForm = document.getElementById('newPresetForm');
+        const savePresetBtn = document.getElementById('savePresetBtn');
+        const cancelPresetBtn = document.getElementById('cancelPresetBtn');
+        const startTrainingBtn = document.getElementById('startTrainingBtn');
+        const mainImage = document.getElementById('mainImage');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const playPauseBtn = document.getElementById('playPauseBtn');
+        const timerTextSpan = document.getElementById('timerText');
+        const counterIndicator = document.getElementById('counterIndicator');
+        const closeAppBtn = document.getElementById('closeAppBtn');
+        const exportPresetsBtn = document.getElementById('exportPresetsBtn');
+        const importPresetsBtn = document.getElementById('importPresetsBtn');
+        const presetsSection = document.getElementById('presetsSection');
+
+        function formatTimeMMSS(sec) {
+            let mins = Math.floor(sec / 60);
+            let secs = sec % 60;
+            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function formatTotalTime(sec) {
+            let hours = Math.floor(sec / 3600);
+            let mins = Math.floor((sec % 3600) / 60);
+            let secs = sec % 60;
+            if (hours > 0) return `${hours}ч ${mins}м ${secs}с`;
+            return `${mins}м ${secs}с`;
+        }
+
+        function loadPresetsFromStorage() {
+            const stored = localStorage.getItem('sketch_presets');
+            if (stored) {
+                presets = JSON.parse(stored);
+            } else {
+                presets = [{
+                    id: "default",
+                    name: "Стандарт 2мин",
+                    imageCount: 8,
+                    order: "random",
+                    drawSec: 120,
+                    observeSec: 0
+                }];
+            }
+            const selectedId = localStorage.getItem('sketch_selected_preset');
+            if (selectedId && presets.some(p => p.id === selectedId)) selectedPresetId = selectedId;
+            else if (presets.length) selectedPresetId = presets[0].id;
+            renderPresets();
+        }
+
+        function savePresetsToStorage() {
+            localStorage.setItem('sketch_presets', JSON.stringify(presets));
+            if (selectedPresetId) localStorage.setItem('sketch_selected_preset', selectedPresetId);
+        }
+
+        function renderPresets() {
+            presetListDiv.innerHTML = '';
+            presets.forEach(p => {
+                const totalSec = p.imageCount * (p.drawSec + p.observeSec);
+                const div = document.createElement('div');
+                div.className = `preset-item ${selectedPresetId === p.id ? 'selected' : ''}`;
+                div.innerHTML = `
+                    <div class="preset-info">
+                        <div class="preset-name">${escapeHtml(p.name)}</div>
+                        <div class="preset-desc">⏱ ${formatTotalTime(totalSec)}</div>
+                    </div>
+                    <div class="preset-actions">
+                        <button class="select-preset" data-id="${p.id}">Выбрать</button>
+                        <button class="edit-preset" data-id="${p.id}">✎</button>
+                        <button class="delete-preset" data-id="${p.id}">🗑</button>
+                    </div>
+                `;
+                presetListDiv.appendChild(div);
+            });
+            document.querySelectorAll('.select-preset').forEach(btn => {
+                btn.addEventListener('click', (e) => { e.stopPropagation(); selectedPresetId = btn.dataset.id; renderPresets(); savePresetsToStorage(); });
+            });
+            document.querySelectorAll('.edit-preset').forEach(btn => {
+                btn.addEventListener('click', (e) => { e.stopPropagation(); editPreset(btn.dataset.id); });
+            });
+            document.querySelectorAll('.delete-preset').forEach(btn => {
+                btn.addEventListener('click', (e) => { e.stopPropagation(); deletePreset(btn.dataset.id); });
+            });
+        }
+
+        function editPreset(id) {
+            const preset = presets.find(p => p.id === id);
+            if (!preset) return;
+            document.getElementById('presetName').value = preset.name;
+            document.getElementById('presetCount').value = preset.imageCount;
+            document.getElementById('presetOrder').value = preset.order;
+            document.getElementById('presetDrawSec').value = preset.drawSec;
+            document.getElementById('presetObserveSec').value = preset.observeSec;
+            newPresetForm.classList.remove('hidden');
+            presetsSection.classList.add('hidden');
+
+            const saveHandler = () => {
+                preset.name = document.getElementById('presetName').value.trim() || "Без имени";
+                preset.imageCount = parseInt(document.getElementById('presetCount').value) || 1;
+                preset.order = document.getElementById('presetOrder').value;
+                preset.drawSec = parseInt(document.getElementById('presetDrawSec').value) || 30;
+                preset.observeSec = parseInt(document.getElementById('presetObserveSec').value) || 0;
+                savePresetsToStorage();
+                renderPresets();
+                newPresetForm.classList.add('hidden');
+                presetsSection.classList.remove('hidden');
+                savePresetBtn.removeEventListener('click', saveHandler);
+            };
+
+            const cancelHandler = () => {
+                newPresetForm.classList.add('hidden');
+                presetsSection.classList.remove('hidden');
+                cancelPresetBtn.onclick = null;
+            };
+
+            savePresetBtn.removeEventListener('click', saveHandler);
+            savePresetBtn.addEventListener('click', saveHandler);
+            cancelPresetBtn.onclick = cancelHandler;
+            attachShortcutButtons();
+        }
+
+        function deletePreset(id) {
+            if (presets.length === 1) { alert("Нельзя удалить последний пресет"); return; }
+            presets = presets.filter(p => p.id !== id);
+            if (selectedPresetId === id) selectedPresetId = presets[0].id;
+            savePresetsToStorage();
+            renderPresets();
+        }
+
+        function createNewPreset() {
+            document.getElementById('presetName').value = "";
+            document.getElementById('presetCount').value = 12;
+            document.getElementById('presetOrder').value = "random";
+            document.getElementById('presetDrawSec').value = 120;
+            document.getElementById('presetObserveSec').value = 0;
+            newPresetForm.classList.remove('hidden');
+            presetsSection.classList.add('hidden');
+
+            const saveNew = () => {
+                const newId = Date.now().toString();
+                const newPreset = {
+                    id: newId,
+                    name: document.getElementById('presetName').value.trim() || "Новый пресет",
+                    imageCount: parseInt(document.getElementById('presetCount').value) || 1,
+                    order: document.getElementById('presetOrder').value,
+                    drawSec: parseInt(document.getElementById('presetDrawSec').value) || 30,
+                    observeSec: parseInt(document.getElementById('presetObserveSec').value) || 0
+                };
+                presets.push(newPreset);
+                selectedPresetId = newId;
+                savePresetsToStorage();
+                renderPresets();
+                newPresetForm.classList.add('hidden');
+                presetsSection.classList.remove('hidden');
+                savePresetBtn.removeEventListener('click', saveNew);
+            };
+
+            const cancelHandler = () => {
+                newPresetForm.classList.add('hidden');
+                presetsSection.classList.remove('hidden');
+                cancelPresetBtn.onclick = null;
+            };
+
+            savePresetBtn.removeEventListener('click', saveNew);
+            savePresetBtn.addEventListener('click', saveNew);
+            cancelPresetBtn.onclick = cancelHandler;
+            attachShortcutButtons();
+        }
+
+        function attachShortcutButtons() {
+            document.querySelectorAll('#drawShortcuts .time-shortcut').forEach(btn => {
+                btn.onclick = () => {
+                    const val = btn.dataset.sec;
+                    if (val === 'custom') {
+                        document.getElementById('presetDrawSec').focus();
+                    } else {
+                        document.getElementById('presetDrawSec').value = val;
+                    }
+                };
+            });
+            document.querySelectorAll('#observeShortcuts .time-shortcut').forEach(btn => {
+                btn.onclick = () => {
+                    const val = btn.dataset.sec;
+                    if (val === 'custom') {
+                        document.getElementById('presetObserveSec').focus();
+                    } else {
+                        document.getElementById('presetObserveSec').value = val;
+                    }
+                };
+            });
+        }
+
+        function exportPresets() {
+            const dataStr = JSON.stringify(presets, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `sketch_presets_${new Date().toISOString().slice(0, 19)}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function importPresets() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'application/json';
+            input.onchange = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    try {
+                        const imported = JSON.parse(ev.target.result);
+                        if (Array.isArray(imported) && imported.length && imported[0].hasOwnProperty('name')) {
+                            presets = imported;
+                            if (!presets.some(p => p.id === selectedPresetId)) selectedPresetId = presets[0].id;
+                            savePresetsToStorage();
+                            renderPresets();
+                            alert("Пресеты успешно загружены!");
+                        } else {
+                            alert("Неверный формат файла");
+                        }
+                    } catch (err) { alert("Ошибка чтения файла"); }
+                };
+                reader.readAsText(file);
+            };
+            input.click();
+        }
+
+        function buildSessionImageList(files, preset) {
+            if (!files.length) return [];
+            const totalFiles = files.length;
+            const needed = preset.imageCount;
+            let resultFiles = [];
+            if (preset.order === "random") {
+                const shuffled = [...files];
+                for (let i = shuffled.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+                }
+                for (let i = 0; i < needed; i++) {
+                    resultFiles.push(shuffled[i % shuffled.length]);
+                }
+            } else {
+                let offset = sequentialOffset;
+                for (let i = 0; i < needed; i++) {
+                    const idx = (offset + i) % totalFiles;
+                    resultFiles.push(files[idx]);
+                }
+                sequentialOffset = (offset + needed) % totalFiles;
+                localStorage.setItem('sketch_seq_offset', sequentialOffset);
+            }
+            return resultFiles;
+        }
+
+        async function startTraining() {
+            if (!currentFolderFiles.length) { alert("Сначала выберите папку с изображениями"); return; }
+            const preset = presets.find(p => p.id === selectedPresetId);
+            if (!preset) return;
+            sessionImages = buildSessionImageList(currentFolderFiles, preset);
+            if (!sessionImages.length) return;
+            sessionIndex = 0;
+            totalShownCount = 0;
+            unlimitedMode = false;
+            totalTrainingSeconds = 0;
+            stopTimer();
+            isRunning = false;
+            await loadImageToView(sessionImages[0]);
+            initTimerForCurrentImage(preset);
+            updateCounterDisplay();
+            startTimerIfNeeded();
+            menuScreen.classList.add('hidden');
+            appScreen.classList.remove('hidden');
+        }
+
+        function updateCounterDisplay() {
+            const preset = presets.find(p => p.id === selectedPresetId);
+            if (!preset) return;
+            if (unlimitedMode) {
+                counterIndicator.innerText = `${sessionIndex + 1}/∞`;
+            } else {
+                counterIndicator.innerText = `${totalShownCount + 1}/${preset.imageCount}`;
+            }
+        }
+
+        async function loadImageToView(fileObj) {
+            const url = URL.createObjectURL(fileObj);
+            mainImage.src = url;
+            mainImage.onload = () => URL.revokeObjectURL(url);
+        }
+
+        function initTimerForCurrentImage(preset) {
+            currentObserveTotalSec = preset.observeSec;
+            currentDrawTotalSec = preset.drawSec;
+            if (currentObserveTotalSec > 0) {
+                currentPhase = "observe";
+                timeLeft = currentObserveTotalSec;
+                observeCompleted = false;
+                drawingElapsedOnThisImage = 0;
+            } else {
+                currentPhase = "draw";
+                timeLeft = currentDrawTotalSec;
+                observeCompleted = true;
+                drawingElapsedOnThisImage = 0;
+            }
+            updateTimerDisplay();
+            applyTimerColor();
+        }
+
+        function applyTimerColor() {
+            const elem = timerTextSpan;
+            if (currentPhase === "observe") elem.style.color = "#6feb6f";
+            else {
+                if (timeLeft <= 10 && timeLeft > 0) elem.style.color = "#ffcc44";
+                else elem.style.color = "rgba(255, 255, 255, var(--btn-transparency))";
+            }
+        }
+
+        function updateTimerDisplay() {
+            let total = timeLeft;
+            let hours = Math.floor(total / 3600);
+            let mins = Math.floor((total % 3600) / 60);
+            let secs = total % 60;
+            if (hours > 0) timerTextSpan.innerText = `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            else timerTextSpan.innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            applyTimerColor();
+        }
+
+        function stopTimer() {
+            if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+            isRunning = false;
+            playPauseBtn.innerText = "⏵";
+        }
+
+        function startTimerIfNeeded() {
+            if (timerInterval) stopTimer();
+            isRunning = true;
+            playPauseBtn.innerText = "⏸";
+            timerInterval = setInterval(() => {
+                if (!isRunning) return;
+                if (timeLeft <= 0) {
+                    if (currentPhase === "observe") {
+                        currentPhase = "draw";
+                        timeLeft = currentDrawTotalSec;
+                        observeCompleted = true;
+                        drawingElapsedOnThisImage = 0;
+                        updateTimerDisplay();
+                        applyTimerColor();
+                    } else {
+                        if (observeCompleted) {
+                            totalTrainingSeconds += (currentObserveTotalSec + currentDrawTotalSec);
+                        } else {
+                            totalTrainingSeconds += currentDrawTotalSec;
+                        }
+                        nextImageAutomatically();
+                    }
+                } else {
+                    if (currentPhase === "draw") {
+                        drawingElapsedOnThisImage = currentDrawTotalSec - timeLeft;
+                    }
+                    timeLeft--;
+                    updateTimerDisplay();
+                }
+            }, 1000);
+        }
+
+        async function nextImageAutomatically() {
+            const preset = presets.find(p => p.id === selectedPresetId);
+            if (!preset) return;
+            if (!unlimitedMode) totalShownCount++;
+            if (!unlimitedMode && totalShownCount >= preset.imageCount) {
+                stopTimer();
+                showCompletionModal(true);
+                return;
+            }
+            let nextIdx = sessionIndex + 1;
+            if (nextIdx >= sessionImages.length) {
+                if (unlimitedMode) nextIdx = 0;
+                else nextIdx = 0;
+            }
+            sessionIndex = nextIdx;
+            await loadImageToView(sessionImages[sessionIndex]);
+            initTimerForCurrentImage(preset);
+            updateCounterDisplay();
+        }
+
+        async function manualSwitch(delta) {
+            if (!sessionImages.length) return;
+            const preset = presets.find(p => p.id === selectedPresetId);
+            if (!preset) return;
+            if (currentPhase === "draw" && drawingElapsedOnThisImage >= 20 && observeCompleted) {
+                totalTrainingSeconds += (currentObserveTotalSec + Math.min(drawingElapsedOnThisImage, currentDrawTotalSec));
+            }
+            let newIndex = sessionIndex + delta;
+            if (newIndex < 0) newIndex = sessionImages.length - 1;
+            if (newIndex >= sessionImages.length) newIndex = 0;
+            sessionIndex = newIndex;
+            await loadImageToView(sessionImages[sessionIndex]);
+            initTimerForCurrentImage(preset);
+            updateCounterDisplay();
+        }
+
+        function pauseResume() {
+            if (!sessionImages.length) return;
+            if (isRunning) {
+                stopTimer();
+            } else {
+                startTimerIfNeeded();
+            }
+        }
+
+        async function showCompletionModal(isFinishedPreset) {
+            stopTimer();
+            const timeStr = formatTotalTime(totalTrainingSeconds);
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.innerHTML = `
+                <div class="modal-card">
+                    <h2>🎉 Поздравляю!</h2>
+                    <p>Вы занимались ${timeStr}!</p>
+                    <button id="modalMenuBtn">🏠 Вернуться в меню</button>
+                    <button id="modalContinueBtn">✏️ Продолжить тренировку</button>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            const menuBtn = document.getElementById('modalMenuBtn');
+            const contBtn = document.getElementById('modalContinueBtn');
+            menuBtn.onclick = () => {
+                modal.remove();
+                menuScreen.classList.remove('hidden');
+                appScreen.classList.add('hidden');
+                stopTimer();
+            };
+            contBtn.onclick = () => {
+                modal.remove();
+                if (isFinishedPreset) {
+                    unlimitedMode = true;
+                    updateCounterDisplay();
+                }
+                startTimerIfNeeded();
+            };
+        }
+
+        function stopAndShowCongrats() {
+            if (!sessionImages.length) return;
+            stopTimer();
+            showCompletionModal(false);
+        }
+
+        selectFolderBtn.onclick = () => {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.webkitdirectory = true;
+            input.onchange = (e) => {
+                const files = Array.from(e.target.files);
+                if (!files.length) return;
+                const imgs = files.filter(f => /\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i.test(f.name));
+                if (!imgs.length) { alert("Нет изображений в папке"); return; }
+                currentFolderFiles = imgs;
+                let folderName = files[0].webkitRelativePath.split('/')[0];
+                folderPathSpan.innerText = `📁 ${folderName} (${imgs.length} фото)`;
+                localStorage.setItem('sketch_last_folder_name', folderName);
+                sequentialOffset = parseInt(localStorage.getItem('sketch_seq_offset')) || 0;
+            };
+            input.click();
+        };
+
+        loadPresetsFromStorage();
+        const lastFolder = localStorage.getItem('sketch_last_folder_name');
+        if (lastFolder) folderPathSpan.innerText = `📁 ${lastFolder} (выберите заново)`;
+        createPresetBtn.onclick = createNewPreset;
+        startTrainingBtn.onclick = startTraining;
+        prevBtn.onclick = () => manualSwitch(-1);
+        nextBtn.onclick = () => manualSwitch(1);
+        playPauseBtn.onclick = pauseResume;
+        closeAppBtn.onclick = stopAndShowCongrats;
+        exportPresetsBtn.onclick = exportPresets;
+        importPresetsBtn.onclick = importPresets;
+
+        function escapeHtml(str) { return str.replace(/[&<>]/g, function (m) { if (m === '&') return '&amp;'; if (m === '<') return '&lt;'; if (m === '>') return '&gt;'; return m; }); }
+        attachShortcutButtons();
+    </script>
+</body>
+
+</html>
+```
