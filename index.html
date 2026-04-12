@@ -920,6 +920,8 @@
             const input = document.createElement('input');
             input.type = 'file';
             input.webkitdirectory = true;
+            input.multiple = true;  // ← ЭТО КЛЮЧЕВОЙ АТРИБУТ ДЛЯ ANDROID
+            input.directory = true; // для совместимости
             input.onchange = (e) => {
                 const files = Array.from(e.target.files);
                 if (!files.length) return;
